@@ -1,0 +1,14 @@
+Index: app.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from flask import flask\r\n\r\napp = Flask(__name__)\r\n\r\n@app.route('/')\r\ndef hello_world():\r\n    return 'Hello, There!'\r\n\r\nif __name__ == '__main__':\r\n    app.run()\r\n
+===================================================================
+diff --git a/app.py b/app.py
+--- a/app.py	(revision 50b7d97deecc5156b0e8f39ea8c8329f0a7b8d6f)
++++ b/app.py	(date 1771407267524)
+@@ -1,4 +1,4 @@
+-from flask import flask
++from flask import flask, Flask
+ 
+ app = Flask(__name__)
+ 
