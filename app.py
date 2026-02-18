@@ -13,7 +13,7 @@ app = Flask(__name__)
 
 # -----------------------
 # HARD-CODED CONFIG (DEMO ONLY)
-# -----------------------
+#
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
