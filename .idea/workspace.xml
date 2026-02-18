@@ -4,13 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b421c286-21c9-4093-bcdf-cb790911e737" name="Changes" comment="Change 1 main">
-      <change beforePath="$PROJECT_DIR$/.idea/PythonProject8.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/PythonProject8.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/21ba18d8-6847-48ec-aebd-c8597e0a51b4.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/21ba18d8-6847-48ec-aebd-c8597e0a51b4.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-    </list>
+    <list default="true" id="b421c286-21c9-4093-bcdf-cb790911e737" name="Changes" comment="def get_events" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -83,7 +77,15 @@
       <option name="project" value="LOCAL" />
       <updated>1771409640819</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="def get_events">
+      <option name="closed" value="true" />
+      <created>1771412217441</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1771412217441</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -91,6 +93,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Change 1 main" />
-    <option name="LAST_COMMIT_MESSAGE" value="Change 1 main" />
+    <MESSAGE value="def get_events" />
+    <option name="LAST_COMMIT_MESSAGE" value="def get_events" />
   </component>
 </project>
