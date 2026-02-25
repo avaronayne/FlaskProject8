@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 # Load environment variables from .env
 load_dotenv()
 
-
 app = Flask(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
