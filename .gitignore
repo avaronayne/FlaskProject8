@@ -7,5 +7,5 @@
 # Python cache
 __pycache__/
 
-# PyCharm / IntelliJ files
+# PyCharm / IntelliJ files added
 .idea/
