@@ -139,7 +139,31 @@ def get_currencies():
         "currencies": CURRENCIES,
         "count": len(CURRENCIES)
     })
+########
 
 
+@app.route("/convert", methods=["POST"])
+def convert_page():
+    from_currency = request.form["from_currency"]
+    to_currency = request.form["to_currency"]
+    amount = float(request.form["amount"])
+
+    data, error = get_all_rates("USD")
+    if error:
+        return render_template("index.html", error=error, currencies=CURRENCIES)
+
+    if from_currency == "USD":
+        converted = amount * data["rates"][to_currency]
+    elif to_currency == "USD":
+        converted = amount / data["rates"][from_currency]
+    else:
+        converted = amount * (data["rates"][to_currency] / data["rates"][from_currency])
+
+    return render_template(
+        "index.html",
+        result=round(converted, 2),
+        currencies=CURRENCIES
+    )
+#########
 if __name__ == "__main__":
     app.run(debug=True)
