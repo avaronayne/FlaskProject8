@@ -62,6 +62,72 @@ def index():
     return render_template("index.html", currencies=CURRENCIES)
 
 
+@app.route("/convert", methods=["POST"])
+def convert_page():
+    """Handle conversion from the HTML form, with optional save to session"""
+    try:
+        # Get form data (matching the HTML field names)
+        amount = float(request.form.get("amount", 0))
+        from_cur = request.form.get("from_cur", "").upper()
+        to_cur = request.form.get("to_cur", "").upper()
+
+        # Validate input
+        if amount <= 0:
+            return render_template("index.html", error="Amount must be greater than 0", currencies=CURRENCIES)
+        if not from_cur or not to_cur:
+            return render_template("index.html", error="Please select both currencies", currencies=CURRENCIES)
+
+        # Get exchange rates
+        data, error = get_all_rates("USD")
+        if error:
+            return render_template("index.html", error=error, currencies=CURRENCIES)
+
+        # Perform conversion
+        if from_cur == "USD":
+            converted = amount * data["rates"][to_cur]
+        elif to_cur == "USD":
+            converted = amount / data["rates"][from_cur]
+        else:
+            converted = amount * (data["rates"][to_cur] / data["rates"][from_cur])
+
+        result = round(converted, 2)
+
+        # Check if Save button was clicked
+        if 'save' in request.form:
+            # Initialize session history if not present
+            if 'history' not in session:
+                session['history'] = []
+            # Append the conversion record
+            session['history'].append({
+                'amount': amount,
+                'from': from_cur,
+                'to': to_cur,
+                'result': result,
+                'date': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+            session.modified = True
+
+        # Render the page with the result
+        return render_template("index.html", result=result, currencies=CURRENCIES)
+
+    except KeyError as e:
+        return render_template("index.html", error=f"Currency not found: {str(e)}", currencies=CURRENCIES)
+    except ValueError:
+        return render_template("index.html", error="Invalid amount format", currencies=CURRENCIES)
+    except Exception as e:
+        return render_template("index.html", error=f"Conversion failed: {str(e)}", currencies=CURRENCIES)
+
+
+@app.route("/history")
+def history():
+    """Display saved conversion history from session"""
+    saved = session.get('history', [])
+    return render_template("history.html", saved=saved)
+
+
+# -----------------------
+# API ENDPOINTS
+# -----------------------
 @app.route("/api/rates")
 def get_rates():
     """API endpoint to get all exchange rates"""
