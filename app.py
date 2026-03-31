@@ -1,6 +1,19 @@
 import requests
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, session
 from datetime import datetime
+import os
+
+SAVE_FILE = "saved_conversions.json"
+
+def load_conversions():
+    if os.path.exists(SAVE_FILE):
+        with open(SAVE_FILE, 'r') as f:
+            return json.load(f)
+    return []
+
+def save_conversions(conversions):
+    with open(SAVE_FILE, 'w') as f:
+        json.dump(conversions, f, indent=2)
 
 app = Flask(__name__)
 
@@ -126,11 +139,10 @@ def history():
 
 
 # -----------------------
-# API ENDPOINTS
+# API ENDPOINTS (unchanged)
 # -----------------------
 @app.route("/api/rates")
 def get_rates():
-    """API endpoint to get all exchange rates"""
     base = request.args.get("base", "USD")
     data, error = get_all_rates(base)
 
@@ -146,30 +158,24 @@ def get_rates():
 
 @app.route("/api/convert")
 def convert_currency():
-    """API endpoint to convert currency"""
     try:
         from_currency = request.args.get("from", "USD").upper()
         to_currency = request.args.get("to", "EUR").upper()
         amount = float(request.args.get("amount", 1))
 
-        # Validate amount
         if amount <= 0:
             return jsonify({"error": "Amount must be greater than 0"}), 400
 
-        # Validate currencies
         if from_currency not in CURRENCIES or to_currency not in CURRENCIES:
             return jsonify({"error": "Invalid currency code"}), 400
 
-        # Get rates with USD as base for consistency
         data, error = get_all_rates("USD")
         if error:
             return jsonify({"error": error}), 503
 
-        # Check if currencies exist in rates
         if from_currency not in data["rates"] or to_currency not in data["rates"]:
             return jsonify({"error": "Currency not supported"}), 400
 
-        # Convert through USD if needed
         if from_currency == "USD":
             converted = amount * data["rates"][to_currency]
             rate = data["rates"][to_currency]
@@ -177,7 +183,6 @@ def convert_currency():
             converted = amount / data["rates"][from_currency]
             rate = 1 / data["rates"][from_currency]
         else:
-            # Convert through USD: amount * (to_rate / from_rate)
             converted = amount * (data["rates"][to_currency] / data["rates"][from_currency])
             rate = data["rates"][to_currency] / data["rates"][from_currency]
 
@@ -200,7 +205,6 @@ def convert_currency():
 
 @app.route("/api/currencies")
 def get_currencies():
-    """Return list of supported currencies"""
     return jsonify({
         "currencies": CURRENCIES,
         "count": len(CURRENCIES)

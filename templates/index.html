@@ -4,28 +4,90 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Currency Converter</title>
-
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
+            background: #f0f2f5;
+            margin: 0;
             padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
-        .container {
-            border: 1px solid #ccc;
-            padding: 20px;
-            border-radius: 5px;
-        }
-        input, select, button {
-            margin: 10px 0;
-            padding: 8px;
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 30px;
             width: 100%;
+            max-width: 500px;
+        }
+        h1 {
+            margin-top: 0;
+            color: #1a73e8;
+            font-size: 1.8rem;
+        }
+        label {
+            display: block;
+            margin: 15px 0 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        button {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+        }
+        button:hover {
+            background: #1557b0;
+        }
+        .save-btn {
+            background: #34a853;
+        }
+        .save-btn:hover {
+            background: #2c8b45;
         }
         .result {
             margin-top: 20px;
+            padding: 15px;
+            background: #e8f0fe;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.2rem;
             font-weight: bold;
-            color: #4CAF50;
+            color: #1a73e8;
+        }
+        .error {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fce8e6;
+            border-radius: 8px;
+            color: #d93025;
+        }
+        .history-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #1a73e8;
+            text-decoration: none;
+        }
+        .history-link:hover {
+            text-decoration: underline;
         }
         .button-group {
             display: flex;
@@ -33,25 +95,37 @@
         }
         .button-group button {
             flex: 1;
+            margin-top: 0;
+        }
+        @media (max-width: 500px) {
+            .button-group {
+                flex-direction: column;
+            }
+            .card {
+                padding: 20px;
+            }
         }
     </style>
 </head>
 <body>
-
-    <div class="container">
+    <div class="card">
         <h1>Currency Converter</h1>
-        <form method="POST" action="/convert">
-            <input type="number" name="amount" placeholder="Amount" step="0.01" required>
 
+        <form method="POST" action="/convert">
+            <label>Amount</label>
+            <input type="number" name="amount" step="any" required>
+
+            <label>From Currency</label>
             <select name="from_cur" required>
-                <option value="">From Currency</option>
+                <option value="">-- Select --</option>
                 {% for currency in currencies %}
                 <option value="{{ currency }}">{{ currency }}</option>
                 {% endfor %}
             </select>
 
+            <label>To Currency</label>
             <select name="to_cur" required>
-                <option value="">To Currency</option>
+                <option value="">-- Select --</option>
                 {% for currency in currencies %}
                 <option value="{{ currency }}">{{ currency }}</option>
                 {% endfor %}
@@ -59,15 +133,23 @@
 
             <div class="button-group">
                 <button type="submit" name="convert">Convert</button>
-                <button type="submit" name="save">Convert and Save</button>
+                <button type="submit" name="save" class="save-btn">Convert & Save</button>
             </div>
         </form>
 
         {% if result %}
         <div class="result">
-            Result: {{ result }}
+            {{ result }}
         </div>
         {% endif %}
+
+        {% if error %}
+        <div class="error">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <a href="/history" class="history-link">View Saved Conversions</a>
     </div>
 </body>
 </html>
