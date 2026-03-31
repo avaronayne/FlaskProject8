@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Currency Converter</title>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -26,6 +27,13 @@
             font-weight: bold;
             color: #4CAF50;
         }
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        .button-group button {
+            flex: 1;
+        }
     </style>
 </head>
 <body>
@@ -34,19 +42,25 @@
         <h1>Currency Converter</h1>
         <form method="POST" action="/convert">
             <input type="number" name="amount" placeholder="Amount" step="0.01" required>
-            <select name="from_currency" required>
+
+            <select name="from_cur" required>
                 <option value="">From Currency</option>
                 {% for currency in currencies %}
                 <option value="{{ currency }}">{{ currency }}</option>
                 {% endfor %}
             </select>
-            <select name="to_currency" required>
+
+            <select name="to_cur" required>
                 <option value="">To Currency</option>
                 {% for currency in currencies %}
                 <option value="{{ currency }}">{{ currency }}</option>
                 {% endfor %}
             </select>
-            <button type="submit">Convert</button>
+
+            <div class="button-group">
+                <button type="submit" name="convert">Convert</button>
+                <button type="submit" name="save">Convert and Save</button>
+            </div>
         </form>
 
         {% if result %}
@@ -56,5 +70,4 @@
         {% endif %}
     </div>
 </body>
-
 </html>
