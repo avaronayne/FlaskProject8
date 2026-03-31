@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Conversions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 30px;
+            width: 100%;
+            max-width: 800px;
+        }
+        h1 {
+            margin-top: 0;
+            color: #1a73e8;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+        .empty {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            color: #1a73e8;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 600px) {
+            .card {
+                padding: 20px;
+            }
+            th, td {
+                padding: 8px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Saved Conversions</h1>
+
+        {% if saved %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in saved %}
+                <tr>
+                    <td>{{ item.date }}</td>
+                    <td>{{ item.amount }}</td>
+                    <td>{{ item.from }}</td>
+                    <td>{{ item.to }}</td>
+                    <td>{{ item.result }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">No saved conversions yet.</div>
+        {% endif %}
+
+        <a href="/">← Back to Converter</a>
+    </div>
+</body>
+</html>
