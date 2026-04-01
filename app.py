@@ -9,6 +9,29 @@ import os
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import os
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+def get_db_connection():
+    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+
+def save_conversion(amount, from_cur, to_cur, result):
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO conversions (amount, from_cur, to_cur, result) VALUES (%s, %s, %s, %s)",
+                (amount, from_cur, to_cur, result)
+            )
+        conn.commit()
+
+def load_conversions():
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM conversions ORDER BY created_at DESC")
+            return cur.fetchall()
 SUPABASE_URL = "https://osxtdllhhaeedfygtunl.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zeHRkbGxoaGFlZWRmeWd0dW5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MDM3NTMsImV4cCI6MjA4Njk3OTc1M30.XXzFNsP1o-6uX5Y2jCQm5fyHtu1t_kazCeuD1fp4r0A"
 
@@ -30,23 +53,6 @@ cache = {
     "timestamp": None,
     "base": None
 }
-def get_db_connection():
-    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
-
-def save_conversion(amount, from_cur, to_cur, result):
-    with get_db_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO conversions (amount, from_cur, to_cur, result) VALUES (%s, %s, %s, %s)",
-                (amount, from_cur, to_cur, result)
-            )
-        conn.commit()
-
-def load_conversions():
-    with get_db_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM conversions ORDER BY created_at DESC")
-            return cur.fetchall()
 
 def get_all_rates(base_currency="USD"):
     global cache
