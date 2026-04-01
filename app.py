@@ -2,7 +2,7 @@ import requests
 from flask import Flask, jsonify, render_template, request, session
 from datetime import datetime
 import os
-from supabase import create_client
+
 
 SUPABASE_URL = "https://osxtdllhhaeedfygtunl.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zeHRkbGxoaGFlZWRmeWd0dW5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MDM3NTMsImV4cCI6MjA4Njk3OTc1M30.XXzFNsP1o-6uX5Y2jCQm5fyHtu1t_kazCeuD1fp4r0A"
