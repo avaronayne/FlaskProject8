@@ -72,6 +72,7 @@
             font-weight: bold;
             color: #1a73e8;
         }
+
         .error {
             margin-top: 20px;
             padding: 15px;
@@ -112,42 +113,35 @@
         <h1>Currency Converter</h1>
 
         <form method="POST" action="/convert">
-            <label>Amount</label>
-            <input type="number" name="amount" step="any" required>
-
-            <label>From Currency</label>
-            <select name="from_cur" required>
-                <option value="">-- Select --</option>
+            <input type="number" name="amount" placeholder="Amount" step="0.01" required>
+            <select name="from_currency" required>
+                <option value="" disabled selected>From Currency</option>
                 {% for currency in currencies %}
                 <option value="{{ currency }}">{{ currency }}</option>
                 {% endfor %}
             </select>
-
-            <label>To Currency</label>
-            <select name="to_cur" required>
-                <option value="">-- Select --</option>
+            <select name="to_currency" required>
+                <option value="" disabled selected>To Currency</option>
                 {% for currency in currencies %}
                 <option value="{{ currency }}">{{ currency }}</option>
                 {% endfor %}
             </select>
-
-            <div class="button-group">
-                <button type="submit" name="convert">Convert</button>
-                <button type="submit" name="save" class="save-btn">Convert & Save</button>
-            </div>
+            <button type="submit">Convert</button>
         </form>
 
         {% if result %}
-        <div class="result">
-            {{ result }}
-        </div>
-        {% endif %}
+<div class="result">
+    Result: {{ result }}
+</div>
 
-        {% if error %}
-        <div class="error">
-            {{ error }}
-        </div>
-        {% endif %}
+<form method="POST" action="/save">
+    <input type="hidden" name="from_currency" value="{{ from_currency }}">
+    <input type="hidden" name="to_currency" value="{{ to_currency }}">
+    <input type="hidden" name="amount" value="{{ amount }}">
+    <input type="hidden" name="result" value="{{ result }}">
+    <button type="submit">Save</button>
+</form>
+{% endif %}
 
         <a href="/history" class="history-link">View Saved Conversions</a>
     </div>
