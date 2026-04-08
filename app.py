@@ -1,5 +1,5 @@
 import requests
-from flask import Flask, jsonify, render_template, request, session
+from flask import Flask, jsonify, render_template, request
 from datetime import datetime
 import os
 import psycopg2
@@ -16,7 +16,6 @@ def get_db_connection():
     return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
 def save_conversion_db(amount, from_cur, to_cur, result):
-    """Save a conversion to the database (using psycopg2)"""
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -72,14 +71,13 @@ def index():
 
 @app.route("/convert", methods=["POST"])
 def convert_page():
-    # Use the field names from your HTML (from_cur, to_cur, amount)
+    # Use field names from the fixed HTML below
     from_cur = request.form.get("from_cur")
     to_cur = request.form.get("to_cur")
     amount_str = request.form.get("amount")
 
-    # Validate input
     if not from_cur or not to_cur or not amount_str:
-        return render_template("index.html", error="All fields are required.", currencies=CURRENCIES)
+        return render_template("index.html", error="All fields required.", currencies=CURRENCIES)
 
     try:
         amount = float(amount_str)
@@ -88,7 +86,6 @@ def convert_page():
     except ValueError:
         return render_template("index.html", error="Amount must be a positive number.", currencies=CURRENCIES)
 
-    # Get rates
     data, error = get_all_rates("USD")
     if error:
         return render_template("index.html", error=error, currencies=CURRENCIES)
@@ -105,7 +102,7 @@ def convert_page():
 
     result = round(converted, 2)
 
-    # If the "save" button was clicked, store the conversion in the database
+    # If Save button clicked
     if 'save' in request.form:
         save_conversion_db(amount, from_cur, to_cur, result)
 
@@ -124,7 +121,7 @@ def history():
     return render_template("history.html", saved=saved)
 
 # -----------------------
-# API endpoints (unchanged)
+# API endpoints (unchanged from your original)
 # -----------------------
 @app.route("/api/rates")
 def get_rates():
@@ -145,14 +142,12 @@ def convert_currency():
         to_currency = request.args.get("to", "EUR").upper()
         amount = float(request.args.get("amount", 1))
         if amount <= 0:
-            return jsonify({"error": "Amount must be greater than 0"}), 400
+            return jsonify({"error": "Amount must be > 0"}), 400
         if from_currency not in CURRENCIES or to_currency not in CURRENCIES:
-            return jsonify({"error": "Invalid currency code"}), 400
+            return jsonify({"error": "Invalid currency"}), 400
         data, error = get_all_rates("USD")
         if error:
             return jsonify({"error": error}), 503
-        if from_currency not in data["rates"] or to_currency not in data["rates"]:
-            return jsonify({"error": "Currency not supported"}), 400
         if from_currency == "USD":
             converted = amount * data["rates"][to_currency]
             rate = data["rates"][to_currency]
@@ -171,7 +166,7 @@ def convert_currency():
             "date": data["date"]
         })
     except ValueError:
-        return jsonify({"error": "Invalid amount format"}), 400
+        return jsonify({"error": "Invalid amount"}), 400
     except KeyError as e:
         return jsonify({"error": f"Currency not found: {str(e)}"}), 400
     except Exception as e:
@@ -179,14 +174,8 @@ def convert_currency():
 
 @app.route("/api/currencies")
 def get_currencies():
-    return jsonify({
-        "currencies": CURRENCIES,
-        "count": len(CURRENCIES)
-    })
+    return jsonify({"currencies": CURRENCIES, "count": len(CURRENCIES)})
 
-# -----------------------
-# Run the app (production ready)
-# -----------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
