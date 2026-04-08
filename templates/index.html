@@ -56,12 +56,6 @@
         button:hover {
             background: #1557b0;
         }
-        .save-btn {
-            background: #34a853;
-        }
-        .save-btn:hover {
-            background: #2c8b45;
-        }
         .result {
             margin-top: 20px;
             padding: 15px;
@@ -89,21 +83,12 @@
         .history-link:hover {
             text-decoration: underline;
         }
-        .button-group {
-            display: flex;
-            gap: 10px;
+        .save-btn {
+            background: #34a853;
+            margin-top: 10px;
         }
-        .button-group button {
-            flex: 1;
-            margin-top: 0;
-        }
-        @media (max-width: 500px) {
-            .button-group {
-                flex-direction: column;
-            }
-            .card {
-                padding: 20px;
-            }
+        .save-btn:hover {
+            background: #2c8b45;
         }
     </style>
 </head>
@@ -111,10 +96,10 @@
     <div class="card">
         <h1>Currency Converter</h1>
 
-        <!-- Single form that submits to /convert -->
+        <!-- Form 1: Convert only -->
         <form method="POST" action="/convert">
             <label>Amount</label>
-            <input type="number" name="amount" placeholder="Amount" step="0.01" required>
+            <input type="number" name="amount" step="0.01" required>
 
             <label>From Currency</label>
             <select name="from_cur" required>
@@ -132,22 +117,26 @@
                 {% endfor %}
             </select>
 
-            <div class="button-group">
-                <button type="submit" name="convert">Convert</button>
-                <button type="submit" name="save" class="save-btn">Convert & Save</button>
-            </div>
+            <button type="submit">Convert</button>
         </form>
 
         {% if result %}
         <div class="result">
             Result: {{ result }}
         </div>
+
+        <!-- Form 2: Save button (appears only after conversion) -->
+        <form method="POST" action="/save">
+            <input type="hidden" name="from_cur" value="{{ from_currency }}">
+            <input type="hidden" name="to_cur" value="{{ to_currency }}">
+            <input type="hidden" name="amount" value="{{ amount }}">
+            <input type="hidden" name="result" value="{{ result }}">
+            <button type="submit" class="save-btn">Save</button>
+        </form>
         {% endif %}
 
         {% if error %}
-        <div class="error">
-            Error: {{ error }}
-        </div>
+        <div class="error">{{ error }}</div>
         {% endif %}
 
         <a href="/history" class="history-link">View Saved Conversions</a>

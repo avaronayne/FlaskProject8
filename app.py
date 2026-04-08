@@ -8,11 +8,11 @@ from datetime import datetime
 app = Flask(__name__)
 
 # ---------------------------
-# Config
+# Configuration
 # ---------------------------
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if not DATABASE_URL:
-    print("WARNING: DATABASE_URL not set. Saving will not work.")
+    print("⚠️  WARNING: DATABASE_URL not set. Saving will not work.")
 
 CURRENCIES = [
     "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY",
@@ -21,20 +21,21 @@ CURRENCIES = [
 ]
 BASE_URL = "https://api.exchangerate-api.com/v4/latest/"
 
-# Simple cache
+# Simple cache for exchange rates
 cache = {"data": None, "timestamp": None, "base": None}
 
 # ---------------------------
-# Database helpers
+# Database helpers (using psycopg2)
 # ---------------------------
 def get_db_connection():
     if not DATABASE_URL:
         return None
     return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
-def save_conversion(amount, from_cur, to_cur, result):
+def save_conversion_db(amount, from_cur, to_cur, result):
+    """Save a conversion to the PostgreSQL database."""
     if not DATABASE_URL:
-        print("DATABASE_URL missing, cannot save")
+        print("❌ DATABASE_URL missing – cannot save")
         return False
     try:
         with get_db_connection() as conn:
@@ -44,13 +45,14 @@ def save_conversion(amount, from_cur, to_cur, result):
                     VALUES (%s, %s, %s, %s)
                 """, (amount, from_cur, to_cur, result))
             conn.commit()
-        print(f"Saved: {amount} {from_cur} -> {result} {to_cur}")
+        print(f"✅ Saved: {amount} {from_cur} → {result} {to_cur}")
         return True
     except Exception as e:
-        print(f"DB save error: {e}")
+        print(f"❌ DB save error: {e}")
         return False
 
 def load_conversions():
+    """Load all saved conversions, newest first."""
     if not DATABASE_URL:
         return []
     try:
@@ -59,43 +61,47 @@ def load_conversions():
                 cur.execute("SELECT * FROM conversions ORDER BY created_at DESC")
                 return cur.fetchall()
     except Exception as e:
-        print(f"DB load error: {e}")
+        print(f"❌ DB load error: {e}")
         return []
 
 # ---------------------------
-# Exchange rate API
+# Exchange rate API with caching
 # ---------------------------
 def get_all_rates(base_currency="USD"):
     global cache
     now = datetime.now()
+    # Return cached data if less than 1 hour old
     if (cache["data"] and cache["base"] == base_currency and
         cache["timestamp"] and (now - cache["timestamp"]).seconds < 3600):
         return cache["data"], None
     try:
-        resp = requests.get(f"{BASE_URL}{base_currency}", timeout=5)
-        data = resp.json()
-        if resp.status_code != 200:
-            return None, f"API error: {data.get('error', 'Unknown')}"
+        response = requests.get(f"{BASE_URL}{base_currency}", timeout=5)
+        data = response.json()
+        if response.status_code != 200:
+            return None, f"API Error: {data.get('error', 'Unknown error')}"
         cache["data"] = data
         cache["timestamp"] = now
         cache["base"] = base_currency
         return data, None
-    except Exception as e:
-        return None, str(e)
+    except requests.RequestException as e:
+        return None, f"Failed to contact exchange rate service: {str(e)}"
 
 # ---------------------------
 # Routes
 # ---------------------------
 @app.route("/")
 def index():
+    """Main page with conversion form."""
     return render_template("index.html", currencies=CURRENCIES)
 
 @app.route("/convert", methods=["POST"])
 def convert():
+    """Perform currency conversion and show result (no saving)."""
     amount_str = request.form.get("amount")
     from_cur = request.form.get("from_cur")
     to_cur = request.form.get("to_cur")
 
+    # Validation
     if not amount_str or not from_cur or not to_cur:
         return render_template("index.html", error="All fields required", currencies=CURRENCIES)
 
@@ -104,11 +110,12 @@ def convert():
         if amount <= 0:
             raise ValueError
     except ValueError:
-        return render_template("index.html", error="Amount must be > 0", currencies=CURRENCIES)
+        return render_template("index.html", error="Amount must be a positive number", currencies=CURRENCIES)
 
-    data, err = get_all_rates("USD")
-    if err:
-        return render_template("index.html", error=err, currencies=CURRENCIES)
+    # Get exchange rates
+    data, error = get_all_rates("USD")
+    if error:
+        return render_template("index.html", error=error, currencies=CURRENCIES)
 
     rates = data["rates"]
     try:
@@ -123,30 +130,113 @@ def convert():
 
     result = round(converted, 2)
 
-    # If the "save" button was clicked, store in DB
-    if 'save' in request.form:
-        save_conversion(amount, from_cur, to_cur, result)
+    # Render the page with the result and hidden fields for saving
+    return render_template("index.html",
+                           result=result,
+                           from_currency=from_cur,
+                           to_currency=to_cur,
+                           amount=amount,
+                           currencies=CURRENCIES)
 
-    return render_template("index.html", result=result, currencies=CURRENCIES)
+@app.route("/save", methods=["POST"])
+def save():
+    """Save a previously converted amount to the database."""
+    from_cur = request.form.get("from_cur")
+    to_cur = request.form.get("to_cur")
+    amount_str = request.form.get("amount")
+    result_str = request.form.get("result")
+
+    if not all([from_cur, to_cur, amount_str, result_str]):
+        return render_template("index.html", error="Missing data – cannot save", currencies=CURRENCIES)
+
+    try:
+        amount = float(amount_str)
+        result = float(result_str)
+    except ValueError:
+        return render_template("index.html", error="Invalid numeric data", currencies=CURRENCIES)
+
+    save_conversion_db(amount, from_cur, to_cur, result)
+    return render_template("index.html", success="Conversion saved!", currencies=CURRENCIES)
 
 @app.route("/history")
 def history():
+    """Display all saved conversions."""
     saved = load_conversions()
     return render_template("history.html", saved=saved)
 
 # ---------------------------
-# API endpoints (optional, keep as is)
+# API endpoints (optional, for assignment)
 # ---------------------------
 @app.route("/api/rates")
 def api_rates():
     base = request.args.get("base", "USD")
-    data, err = get_all_rates(base)
-    if err:
-        return jsonify({"error": err}), 503
+    data, error = get_all_rates(base)
+    if error:
+        return jsonify({"error": error}), 503
     return jsonify({"base": data["base"], "date": data["date"], "rates": data["rates"]})
 
+@app.route("/api/convert")
+def api_convert():
+    try:
+        from_cur = request.args.get("from", "USD").upper()
+        to_cur = request.args.get("to", "EUR").upper()
+        amount = float(request.args.get("amount", 1))
+        if amount <= 0:
+            return jsonify({"error": "Amount must be > 0"}), 400
+        if from_cur not in CURRENCIES or to_cur not in CURRENCIES:
+            return jsonify({"error": "Invalid currency"}), 400
+        data, error = get_all_rates("USD")
+        if error:
+            return jsonify({"error": error}), 503
+        rates = data["rates"]
+        if from_cur == "USD":
+            converted = amount * rates[to_cur]
+            rate = rates[to_cur]
+        elif to_cur == "USD":
+            converted = amount / rates[from_cur]
+            rate = 1 / rates[from_cur]
+        else:
+            converted = amount * (rates[to_cur] / rates[from_cur])
+            rate = rates[to_cur] / rates[from_cur]
+        return jsonify({
+            "from": from_cur,
+            "to": to_cur,
+            "amount": amount,
+            "converted": round(converted, 2),
+            "rate": round(rate, 4),
+            "date": data["date"]
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/currencies")
+def api_currencies():
+    return jsonify({"currencies": CURRENCIES, "count": len(CURRENCIES)})
+
 # ---------------------------
-# Run
+# Health check (for assignment)
+# ---------------------------
+@app.route("/health")
+def health():
+    db_ok = False
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+                db_ok = True
+    except:
+        pass
+    api_ok = get_all_rates()[0] is not None
+    status = "ok" if db_ok and api_ok else "degraded"
+    return jsonify({
+        "status": status,
+        "database": "up" if db_ok else "down",
+        "exchange_api": "up" if api_ok else "down",
+        "timestamp": datetime.utcnow().isoformat()
+    })
+
+# ---------------------------
+# Run the app
 # ---------------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
