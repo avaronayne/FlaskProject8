@@ -2,23 +2,21 @@ import requests
 from flask import Flask, jsonify, render_template, request, session
 from datetime import datetime
 import os
-from supabase import create_client
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import os
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
+app = Flask(__name__)
 
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import os
-
+# -----------------------
+# CONFIGURATION
+# -----------------------
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 def get_db_connection():
     return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
-def save_conversion(amount, from_cur, to_cur, result):
+def save_conversion_db(amount, from_cur, to_cur, result):
+    """Save a conversion to the database (using psycopg2)"""
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -32,11 +30,6 @@ def load_conversions():
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM conversions ORDER BY created_at DESC")
             return cur.fetchall()
-SUPABASE_URL = "https://osxtdllhhaeedfygtunl.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zeHRkbGxoaGFlZWRmeWd0dW5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MDM3NTMsImV4cCI6MjA4Njk3OTc1M30.XXzFNsP1o-6uX5Y2jCQm5fyHtu1t_kazCeuD1fp4r0A"
-
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-app = Flask(__name__)
 
 API_KEY = "9ea12d667dbda46fd01fd9a2"
 BASE_URL = "https://api.exchangerate-api.com/v4/latest/"
@@ -79,12 +72,13 @@ def index():
 
 @app.route("/convert", methods=["POST"])
 def convert_page():
-    from_currency = request.form.get("from_currency")
-    to_currency = request.form.get("to_currency")
+    # Use the field names from your HTML (from_cur, to_cur, amount)
+    from_cur = request.form.get("from_cur")
+    to_cur = request.form.get("to_cur")
     amount_str = request.form.get("amount")
 
     # Validate input
-    if not from_currency or not to_currency or not amount_str:
+    if not from_cur or not to_cur or not amount_str:
         return render_template("index.html", error="All fields are required.", currencies=CURRENCIES)
 
     try:
@@ -100,53 +94,38 @@ def convert_page():
         return render_template("index.html", error=error, currencies=CURRENCIES)
 
     try:
-        if from_currency == "USD":
-            converted = amount * data["rates"].get(to_currency, 0)
-        elif to_currency == "USD":
-            converted = amount / data["rates"].get(from_currency, 1)
+        if from_cur == "USD":
+            converted = amount * data["rates"].get(to_cur, 0)
+        elif to_cur == "USD":
+            converted = amount / data["rates"].get(from_cur, 1)
         else:
-            converted = amount * (data["rates"].get(to_currency, 0) / data["rates"].get(from_currency, 1))
+            converted = amount * (data["rates"].get(to_cur, 0) / data["rates"].get(from_cur, 1))
     except Exception:
         return render_template("index.html", error="Error calculating conversion.", currencies=CURRENCIES)
 
+    result = round(converted, 2)
+
+    # If the "save" button was clicked, store the conversion in the database
+    if 'save' in request.form:
+        save_conversion_db(amount, from_cur, to_cur, result)
+
     return render_template(
         "index.html",
-        result=round(converted, 2),
-        from_currency=from_currency,
-        to_currency=to_currency,
+        result=result,
+        from_currency=from_cur,
+        to_currency=to_cur,
         amount=amount,
         currencies=CURRENCIES
     )
 
-@app.route("/save", methods=["POST"])
-def save_conversion():
-    try:
-        data = {
-            "from_currency": request.form["from_currency"],
-            "to_currency": request.form["to_currency"],
-            "amount": float(request.form["amount"]),
-            "result": float(request.form["result"])
-        }
-        response = supabase.table("conversions").insert(data).execute()
-        return render_template(
-            "index.html",
-            success="Saved successfully!",
-            currencies=CURRENCIES
-        )
-    except Exception as e:
-        return render_template(
-            "index.html",
-            error=str(e),
-            currencies=CURRENCIES
-        )
-
 @app.route("/history")
 def history():
-    response = supabase.table("conversions").select("*").execute()
-    saved = response.data
+    saved = load_conversions()
     return render_template("history.html", saved=saved)
 
+# -----------------------
 # API endpoints (unchanged)
+# -----------------------
 @app.route("/api/rates")
 def get_rates():
     base = request.args.get("base", "USD")
@@ -205,10 +184,9 @@ def get_currencies():
         "count": len(CURRENCIES)
     })
 
+# -----------------------
+# Run the app (production ready)
+# -----------------------
 if __name__ == "__main__":
-    app.run(debug=True)
-
-if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
