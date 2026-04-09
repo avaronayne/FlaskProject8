@@ -1,11 +1,15 @@
 from dotenv import load_dotenv
 load_dotenv()
 import os
+from dotenv import load_dotenv
+load_dotenv()
 import requests
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from flask import Flask, render_template, request, jsonify
 from datetime import datetime
+##
+
 
 app = Flask(__name__)
 
@@ -224,7 +228,9 @@ def health():
                 db_ok = True
     except:
         pass
-    api_ok = get_all_rates()[0] is not None
+    #api_ok = get_all_rates()[0] is not None
+    data, error = get_all_rates()
+    api_ok = data is not None
     status = "ok" if db_ok and api_ok else "degraded"
     return jsonify({
         "status": status,
@@ -243,7 +249,7 @@ def debug():
             with conn.cursor() as cur:
                 cur.execute("SELECT COUNT(*) FROM conversions")
                 count = cur.fetchone()[0]
-            result += f"✅ Database connected. 'conversions' table exists. Row count: {count}<br>"
+            result += f" Database connected. 'conversions' table exists. Row count: {count}<br>"
             # Try a test insert
             test_from = "TEST"
             test_to = "TEST"
