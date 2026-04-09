@@ -230,6 +230,32 @@ def health():
         "exchange_api": "up" if api_ok else "down",
         "timestamp": datetime.utcnow().isoformat()
     })
+@app.route("/debug")
+def debug():
+    import os
+    db_url = os.environ.get("DATABASE_URL", "NOT SET")
+    result = f"DATABASE_URL: {' Set' if db_url != 'NOT SET' else ' Missing'}<br>"
+    if db_url != "NOT SET":
+        try:
+            conn = get_db_connection()
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM conversions")
+                count = cur.fetchone()[0]
+            result += f"✅ Database connected. 'conversions' table exists. Row count: {count}<br>"
+            # Try a test insert
+            test_from = "TEST"
+            test_to = "TEST"
+            test_amount = "1.23"
+            test_result = "4.56"
+            cur.execute("""
+                INSERT INTO conversions (from_currency, to_currency, amount, result)
+                VALUES (%s, %s, %s, %s)
+            """, (test_from, test_to, test_amount, test_result))
+            conn.commit()
+            result += " Test insert succeeded. Check your history page now.<br>"
+        except Exception as e:
+            result += f" Database error: {e}<br>"
+    return result
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
