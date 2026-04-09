@@ -12,7 +12,7 @@ app = Flask(__name__)
 # ---------------------------
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if not DATABASE_URL:
-    print("⚠️  WARNING: DATABASE_URL not set. Saving will not work.")
+    print("WARNING: DATABASE_URL not set. Saving will not work.")
 
 CURRENCIES = [
     "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY",
@@ -25,7 +25,7 @@ BASE_URL = "https://api.exchangerate-api.com/v4/latest/"
 cache = {"data": None, "timestamp": None, "base": None}
 
 # ---------------------------
-# Database helpers (using psycopg2)
+# Database helpers (using your table columns)
 # ---------------------------
 def get_db_connection():
     if not DATABASE_URL:
@@ -33,22 +33,23 @@ def get_db_connection():
     return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
 def save_conversion_db(amount, from_cur, to_cur, result):
-    """Save a conversion to the PostgreSQL database."""
+    """Save a conversion to the PostgreSQL database using your table columns."""
     if not DATABASE_URL:
-        print("❌ DATABASE_URL missing – cannot save")
+        print(" DATABASE_URL missing – cannot save")
         return False
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
+                # Note: column names are from_currency, to_currency, amount, result (all text)
                 cur.execute("""
-                    INSERT INTO conversions (amount, from_cur, to_cur, result)
+                    INSERT INTO conversions (from_currency, to_currency, amount, result)
                     VALUES (%s, %s, %s, %s)
-                """, (amount, from_cur, to_cur, result))
+                """, (from_cur, to_cur, str(amount), str(result)))
             conn.commit()
-        print(f"✅ Saved: {amount} {from_cur} → {result} {to_cur}")
+        print(f"Saved: {amount} {from_cur} → {result} {to_cur}")
         return True
     except Exception as e:
-        print(f"❌ DB save error: {e}")
+        print(f"DB save error: {e}")
         return False
 
 def load_conversions():
@@ -59,9 +60,14 @@ def load_conversions():
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT * FROM conversions ORDER BY created_at DESC")
-                return cur.fetchall()
+                rows = cur.fetchall()
+                # Convert amount and result from text to float for display
+                for row in rows:
+                    row['amount'] = float(row['amount']) if row['amount'] else 0
+                    row['result'] = float(row['result']) if row['result'] else 0
+                return rows
     except Exception as e:
-        print(f"❌ DB load error: {e}")
+        print(f" DB load error: {e}")
         return []
 
 # ---------------------------
@@ -70,7 +76,6 @@ def load_conversions():
 def get_all_rates(base_currency="USD"):
     global cache
     now = datetime.now()
-    # Return cached data if less than 1 hour old
     if (cache["data"] and cache["base"] == base_currency and
         cache["timestamp"] and (now - cache["timestamp"]).seconds < 3600):
         return cache["data"], None
@@ -91,17 +96,14 @@ def get_all_rates(base_currency="USD"):
 # ---------------------------
 @app.route("/")
 def index():
-    """Main page with conversion form."""
     return render_template("index.html", currencies=CURRENCIES)
 
 @app.route("/convert", methods=["POST"])
 def convert():
-    """Perform currency conversion and show result (no saving)."""
     amount_str = request.form.get("amount")
     from_cur = request.form.get("from_cur")
     to_cur = request.form.get("to_cur")
 
-    # Validation
     if not amount_str or not from_cur or not to_cur:
         return render_template("index.html", error="All fields required", currencies=CURRENCIES)
 
@@ -112,7 +114,6 @@ def convert():
     except ValueError:
         return render_template("index.html", error="Amount must be a positive number", currencies=CURRENCIES)
 
-    # Get exchange rates
     data, error = get_all_rates("USD")
     if error:
         return render_template("index.html", error=error, currencies=CURRENCIES)
@@ -130,7 +131,6 @@ def convert():
 
     result = round(converted, 2)
 
-    # Render the page with the result and hidden fields for saving
     return render_template("index.html",
                            result=result,
                            from_currency=from_cur,
@@ -140,7 +140,6 @@ def convert():
 
 @app.route("/save", methods=["POST"])
 def save():
-    """Save a previously converted amount to the database."""
     from_cur = request.form.get("from_cur")
     to_cur = request.form.get("to_cur")
     amount_str = request.form.get("amount")
@@ -160,12 +159,12 @@ def save():
 
 @app.route("/history")
 def history():
-    """Display all saved conversions."""
     saved = load_conversions()
+    # Use a template that matches your column names (from_currency, to_currency, etc.)
     return render_template("history.html", saved=saved)
 
 # ---------------------------
-# API endpoints (optional, for assignment)
+# API endpoints (unchanged, but you can keep them)
 # ---------------------------
 @app.route("/api/rates")
 def api_rates():
@@ -213,9 +212,6 @@ def api_convert():
 def api_currencies():
     return jsonify({"currencies": CURRENCIES, "count": len(CURRENCIES)})
 
-# ---------------------------
-# Health check (for assignment)
-# ---------------------------
 @app.route("/health")
 def health():
     db_ok = False
@@ -235,9 +231,6 @@ def health():
         "timestamp": datetime.utcnow().isoformat()
     })
 
-# ---------------------------
-# Run the app
-# ---------------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)

@@ -2,77 +2,144 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Conversion History</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/superbcss@latest/dist/superb.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Currency Converter</title>
     <style>
         body {
-            margin: 2rem;
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
-        table {
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 30px;
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        th, td {
-            padding: 0.75rem;
-            text-align: center;
-        }
-        th {
-            background-color: #007BFF;
-            color: white;
-        }
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-        a.back-btn {
-            display: inline-block;
-            margin-top: 1rem;
-            padding: 0.5rem 1rem;
-            background-color: #007BFF;
-            color: white;
-            text-decoration: none;
-            border-radius: 0.25rem;
-        }
-        a.back-btn:hover {
-            background-color: #0056b3;
+            max-width: 500px;
         }
         h1 {
+            margin-top: 0;
+            color: #1a73e8;
+            font-size: 1.8rem;
+        }
+        label {
+            display: block;
+            margin: 15px 0 5px;
+            font-weight: bold;
             color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        button {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+        }
+        button:hover {
+            background: #1557b0;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f0fe;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #1a73e8;
+        }
+        .error {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fce8e6;
+            border-radius: 8px;
+            color: #d93025;
+        }
+        .history-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #1a73e8;
+            text-decoration: none;
+        }
+        .history-link:hover {
+            text-decoration: underline;
+        }
+        .save-btn {
+            background: #34a853;
+            margin-top: 10px;
+        }
+        .save-btn:hover {
+            background: #2c8b45;
         }
     </style>
 </head>
 <body>
+    <div class="card">
+        <h1>Currency Converter</h1>
 
-<div class="container">
-    <h1>Saved Conversions</h1>
+        <!-- Convert form (only Convert button) -->
+        <form method="POST" action="/convert">
+            <label>Amount</label>
+            <input type="number" name="amount" step="0.01" required>
 
-    {% if saved and saved|length > 0 %}
-    <table class="table table-striped table-hover">
-        <thead>
-            <tr>
-                <th>From</th>
-                <th>To</th>
-                <th>Amount</th>
-                <th>Result</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in saved %}
-            <tr>
-                <td>{{ item.from_currency }}</td>
-                <td>{{ item.to_currency }}</td>
-                <td>{{ item.amount }}</td>
-                <td>{{ item.result }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-        <p>No conversions saved yet.</p>
-    {% endif %}
+            <label>From Currency</label>
+            <select name="from_cur" required>
+                <option value="" disabled selected>From Currency</option>
+                {% for currency in currencies %}
+                <option value="{{ currency }}">{{ currency }}</option>
+                {% endfor %}
+            </select>
 
-    <a href="/" class="back-btn">Back to Converter</a>
-</div>
+            <label>To Currency</label>
+            <select name="to_cur" required>
+                <option value="" disabled selected>To Currency</option>
+                {% for currency in currencies %}
+                <option value="{{ currency }}">{{ currency }}</option>
+                {% endfor %}
+            </select>
 
+            <button type="submit">Convert</button>
+        </form>
+
+        {% if result %}
+        <div class="result">
+            Result: {{ result }}
+        </div>
+
+        <!-- Save form (appears only after conversion) -->
+        <form method="POST" action="/save">
+            <input type="hidden" name="from_cur" value="{{ from_currency }}">
+            <input type="hidden" name="to_cur" value="{{ to_currency }}">
+            <input type="hidden" name="amount" value="{{ amount }}">
+            <input type="hidden" name="result" value="{{ result }}">
+            <button type="submit" class="save-btn">Save</button>
+        </form>
+        {% endif %}
+
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <a href="/history" class="history-link">View Saved Conversions</a>
+    </div>
 </body>
 </html>
