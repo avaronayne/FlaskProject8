@@ -1,12 +1,9 @@
 import os
-from dotenv import load_dotenv
-load_dotenv()
 import requests
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from flask import Flask, render_template, request, jsonify
 from datetime import datetime
-##
 
 
 app = Flask(__name__)
